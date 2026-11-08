@@ -1,0 +1,7 @@
+# IDEs
+.idea/
+.vscode/
+
+# Environment
+.env
+.env.backup
