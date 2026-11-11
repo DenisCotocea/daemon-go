@@ -4,6 +4,6 @@ services:
     container_name: tailscale-monitor
     restart: always
     ports:
-      - "8080:8080"
+      - "6555:6555"
     env_file:
       - .env

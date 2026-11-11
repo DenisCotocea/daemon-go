@@ -13,5 +13,5 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /app/monitor .
 
-EXPOSE 8080
+EXPOSE 6555
 CMD ["./monitor"]

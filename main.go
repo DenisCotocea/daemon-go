@@ -75,5 +75,5 @@ func main() {
 	}()
 
 	http.HandleFunc("/status", EndPointHandler)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":6555", nil))
 }
