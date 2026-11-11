@@ -49,26 +49,34 @@ func main() {
 				continue
 			}
 			for _, value := range devices.Devices {
-				mu.RLock()
-				oldStatus := devicesMap[value.Name]
-				mu.RUnlock()
+				mu.Lock()
+				oldStatus, exists := devicesMap[value.Name]
 				newStatus := value.IsActive
-				if oldStatus != newStatus {
-					var msg string
-					if newStatus {
-						msg = fmt.Sprintf("🟢 TAILSCALE ALERT\n\nHost: %s\nName: %s\nOS: %s\nStatus: ONLINE\nUser: %s", value.HostName, value.Name, value.OS, value.User)
-					} else {
-						msg = fmt.Sprintf("🔴 TAILSCALE ALERT\n\nHost: %s\nName: %s\nOS: %s\nStatus: OFFLINE\nUser: %s", value.HostName, value.Name, value.OS, value.User)
-					}
 
-					mu.Lock()
+				if !exists {
 					devicesMap[value.Name] = newStatus
 					mu.Unlock()
+					continue
+				}
 
-					_, err := sendTelegramMessage(getTelegramUrl, msg)
-					if err != nil {
-						fmt.Println("Error sending telegram message:", err)
-					}
+				if oldStatus == newStatus {
+					mu.Unlock()
+					continue
+				}
+
+				devicesMap[value.Name] = newStatus
+				mu.Unlock()
+
+				var msg string
+				if newStatus {
+					msg = fmt.Sprintf("🟢 TAILSCALE ALERT\n\nHost: %s\nName: %s\nOS: %s\nStatus: ONLINE\nUser: %s", value.HostName, value.Name, value.OS, value.User)
+				} else {
+					msg = fmt.Sprintf("🔴 TAILSCALE ALERT\n\nHost: %s\nName: %s\nOS: %s\nStatus: OFFLINE\nUser: %s", value.HostName, value.Name, value.OS, value.User)
+				}
+
+				_, err := sendTelegramMessage(getTelegramUrl, msg)
+				if err != nil {
+					fmt.Println("Error sending telegram message:", err)
 				}
 			}
 		}
