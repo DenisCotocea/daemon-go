@@ -36,7 +36,7 @@ func main() {
 
 	mu.Lock()
 	for _, value := range devices.Devices {
-		devicesMap[value.HostName] = value.IsActive
+		devicesMap[value.Name] = value.IsActive
 	}
 	mu.Unlock()
 
@@ -50,19 +50,19 @@ func main() {
 			}
 			for _, value := range devices.Devices {
 				mu.RLock()
-				oldStatus := devicesMap[value.HostName]
+				oldStatus := devicesMap[value.Name]
 				mu.RUnlock()
 				newStatus := value.IsActive
 				if oldStatus != newStatus {
 					var msg string
 					if newStatus {
-						msg = fmt.Sprintf("🟢 TAILSCALE ALERT\n\nHost: %s\nStatus: ONLINE\nUser: %s", value.HostName, value.User)
+						msg = fmt.Sprintf("🟢 TAILSCALE ALERT\n\nHost: %s\nName: %s\nOS: %s\nStatus: ONLINE\nUser: %s", value.HostName, value.Name, value.OS, value.User)
 					} else {
-						msg = fmt.Sprintf("🔴 TAILSCALE ALERT\n\nHost: %s\nStatus: OFFLINE\nUser: %s", value.HostName, value.User)
+						msg = fmt.Sprintf("🔴 TAILSCALE ALERT\n\nHost: %s\nName: %s\nOS: %s\nStatus: OFFLINE\nUser: %s", value.HostName, value.Name, value.OS, value.User)
 					}
 
 					mu.Lock()
-					devicesMap[value.HostName] = newStatus
+					devicesMap[value.Name] = newStatus
 					mu.Unlock()
 
 					_, err := sendTelegramMessage(getTelegramUrl, msg)
