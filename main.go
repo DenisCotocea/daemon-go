@@ -2,13 +2,21 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
 const tokenApiUrl = "https://api.tailscale.com/api/v2/oauth/token"
 const tailscaleApiUrl = "https://api.tailscale.com/api/v2/tailnet/"
 const telegramApiUrl = "https://api.telegram.org/bot"
+
+var (
+	devicesMap = make(map[string]bool)
+	mu         sync.RWMutex
+)
 
 func main() {
 	getDeviceUrl := tailscaleApiUrl + os.Getenv("TAILNET_ID") + "/devices"
@@ -26,10 +34,12 @@ func main() {
 		return
 	}
 
-	devicesMap := make(map[string]bool)
+	mu.Lock()
 	for _, value := range devices.Devices {
 		devicesMap[value.HostName] = value.IsActive
 	}
+	mu.Unlock()
+
 	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for range ticker.C {
@@ -39,7 +49,9 @@ func main() {
 				continue
 			}
 			for _, value := range devices.Devices {
+				mu.RLock()
 				oldStatus := devicesMap[value.HostName]
+				mu.RUnlock()
 				newStatus := value.IsActive
 				if oldStatus != newStatus {
 					var msg string
@@ -49,7 +61,9 @@ func main() {
 						msg = fmt.Sprintf("🔴 TAILSCALE ALERT\n\nHost: %s\nStatus: OFFLINE\nUser: %s", value.HostName, value.User)
 					}
 
+					mu.Lock()
 					devicesMap[value.HostName] = newStatus
+					mu.Unlock()
 
 					_, err := sendTelegramMessage(getTelegramUrl, msg)
 					if err != nil {
@@ -60,5 +74,6 @@ func main() {
 		}
 	}()
 
-	select {}
+	http.HandleFunc("/status", EndPointHandler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

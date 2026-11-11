@@ -12,6 +12,18 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
+func EndPointHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	mu.RLock()
+	err := json.NewEncoder(w).Encode(devicesMap)
+	mu.RUnlock()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func getClient() (*http.Client, error) {
 	ctx := context.Background()
 	oauthConfig := &clientcredentials.Config{
